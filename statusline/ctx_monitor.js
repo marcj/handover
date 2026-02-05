@@ -23,8 +23,8 @@ function readJSON(fd) {
 }
 
 function color(p) {
-  if (p >= 90) return "\x1b[31m"; // red
-  if (p >= 70) return "\x1b[33m"; // yellow
+  if (p >= 80) return "\x1b[31m"; // red - time to handover
+  if (p >= 60) return "\x1b[33m"; // yellow - getting full
   return "\x1b[32m"; // green
 }
 
@@ -95,31 +95,39 @@ function fetchSegments(pct, callback) {
   });
 }
 
-function formatSegments(segments) {
+function formatSegments(segments, actualUsedPct) {
   if (!segments || segments.length === 0) return "";
 
   const BAR_WIDTH = 20;
+  const actualFreePct = 100 - actualUsedPct;
+
+  // Separate topic segments from "free"
+  const topics = segments.filter(s => s.name.toLowerCase() !== "free");
+  const topicTotalPct = topics.reduce((sum, s) => sum + s.pct, 0);
+
+  // Scale topic percentages to fit within actualUsedPct
+  const scaledTopics = topics.map(s => ({
+    ...s,
+    pct: topicTotalPct > 0 ? (s.pct / topicTotalPct) * actualUsedPct : 0
+  }));
 
   // Build the colored bar
   let bar = "";
   let legend = [];
 
-  segments.forEach((s, i) => {
-    const isFree = s.name.toLowerCase() === "free";
-    const c = segmentColor(i, isFree);
+  scaledTopics.forEach((s, i) => {
+    const c = segmentColor(i, false);
     const width = Math.max(1, Math.round((s.pct / 100) * BAR_WIDTH));
     bar += `${c}${"▒".repeat(width)}\x1b[0m`;
 
-    // Legend: colored dot + name (truncate only if very long)
     const shortName = s.name.length > 15 ? s.name.slice(0, 14) + "…" : s.name;
     legend.push(`${c}● ${shortName}\x1b[0m`);
   });
 
-  // Pad bar to fixed width if needed
-  const barLen = segments.reduce((sum, s) => sum + Math.max(1, Math.round((s.pct / 100) * BAR_WIDTH)), 0);
-  if (barLen < BAR_WIDTH) {
-    bar += "\x1b[90m░\x1b[0m".repeat(BAR_WIDTH - barLen);
-  }
+  // Add free segment with correct percentage
+  const freeWidth = Math.max(1, Math.round((actualFreePct / 100) * BAR_WIDTH));
+  bar += `\x1b[90m${"░".repeat(freeWidth)}\x1b[0m`;
+  legend.push(`\x1b[90m● free\x1b[0m`);
 
   return ` ${bar} ${legend.join("  ")}`;
 }
@@ -142,6 +150,6 @@ const k = (n) => n >= 1000 ? (n / 1000).toFixed(0) + "k" : n;
 
 // Try to get segments from daemon (with tiny timeout)
 fetchSegments(pct, (err, result) => {
-  const segmentStr = formatSegments(result?.segments);
+  const segmentStr = formatSegments(result?.segments, pct);
   console.log(`\x1b[95m${model}\x1b[0m \x1b[90m│\x1b[0m ${color(pct)}${pct.toFixed(1)}% used\x1b[0m \x1b[90m(${k(usedTokens)})\x1b[0m${segmentStr}`);
 });

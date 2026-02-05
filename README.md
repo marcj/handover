@@ -22,6 +22,16 @@ Nice status line to know when you have context-rot and should handover:
 
 ![Statusline showing context usage and topic segments](assets/statusbar1.png)
 
+### Quick Install
+
+Tell Claude:
+
+```
+Read https://github.com/marcj/handover and install it in this project
+```
+
+Claude will read the repo, understand the installation steps, and set everything up for you.
+
 ## Workflow
 
 ```
@@ -160,7 +170,9 @@ Nice status line to know when you have context-rot and should handover:
 
 ![Handover skill generating the living document](assets/handover.png)
 
-## Installation
+## Manual Installation
+
+If you prefer to install manually (or Claude's install didn't work):
 
 ### 1. Copy the skill to your project
 
@@ -289,7 +301,7 @@ Opus 4.5 │ 82.0% used (164k) ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒�
 - Visual bar with topic segments
 - Legend showing what each segment represents
 
-The segmentation is powered by a background daemon that calls **Claude Haiku** (the cheapest/fastest model) via `claude --print` to analyze the conversation topics. It only re-analyzes when context increases by 10%+ and at least 60 seconds have passed, keeping costs minimal.
+The segmentation is powered by a background daemon that calls **Claude Sonnet** via `claude --print` to analyze the conversation topics. It only re-analyzes when context increases by 10%+ and at least 60 seconds have passed.
 
 ## How It Works
 

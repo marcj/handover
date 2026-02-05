@@ -83,22 +83,28 @@ function runAnalysis(sessionId, transcriptPath, pct) {
     return;
   }
 
-  const prompt = `Analyze this conversation and identify 3-6 distinct topic segments in chronological order. Be specific about what was discussed - don't merge different topics together.
+  const prompt = `You are analyzing a coding assistant conversation to create a statusline visualization. Extract the main topics discussed.
 
-Output ONLY a single line in this exact format (no explanation):
-topic1 XX%|topic2 XX%|topic3 XX%|...|free XX%
+This is a conversation between a user and an AI coding assistant working on a software project. Identify what technical topics, features, bugs, or tasks were discussed.
+
+Output format (single line, no explanation):
+name1 XX%|name2 XX%|name3 XX%
+
+Example outputs:
+- "auth middleware 30%|user API 25%|database schema 25%|testing 20%"
+- "React hooks 45%|form validation 35%|CSS styling 20%"
+- "memory leak fix 65%|profiling setup 35%"
 
 Rules:
-- 3-6 segments (more segments = more detail, but don't over-split)
-- Each topic name is 1-4 words, be specific (e.g. "statusline daemon" not just "code")
-- Percentages must sum to 100 and roughly reflect how much of the conversation each topic took
-- "free" is remaining unused context = approximately ${100 - Math.round(pct)}%
-- Order chronologically (first topic discussed first)
+- 3-6 topic segments, be SPECIFIC (e.g. "JWT auth" not "authentication", "Redis caching" not "caching")
+- Names: 1-4 words, use technical terms from the conversation
+- Percentages reflect relative time spent on each topic, must sum to 100
+- Chronological order (first topic discussed = first in list)
 
-User messages:
+Conversation transcript:
 ${transcript}`;
 
-  const child = spawn("claude", ["--print", "-p", prompt], {
+  const child = spawn("claude", ["--print", "--model", "claude-sonnet-4-20250514", "-p", prompt], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
   });
