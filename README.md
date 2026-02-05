@@ -1,6 +1,8 @@
 # Handover
 
-A Claude Code plugin for preserving context, learnings, and state across agent sessions. When you're running low on context (~80% used), invoke `/handover` to create a living document that the next agent can pick up seamlessly.
+A Claude Code plugin for preserving context, learnings, and state across agent sessions. When you're running low on context (~80% used), invoke `/handover` to create a living document that the next agent can pick up seamlessly. 
+
+This works for me much better than auto-compact. This helps also a messing-up agent to stop, reflect, and restart with learnings in a fresh context. In this case I just tell the agent "You messed up, we need to handover"; works great! 
 
 ## Features
 
@@ -10,6 +12,11 @@ A Claude Code plugin for preserving context, learnings, and state across agent s
 - **Task preservation** — captures in-flight tasks before session ends
 - **WIP commits** — automatically commits current state so next agent can't accidentally revert
 - **Takeover skill** — for when you forgot to handover and need to recover from a closed session
+
+
+Nice status line to know when you have context-rot and should handover:
+
+![Statusline showing context usage and topic segments](assets/statusbar1.png)
 
 ## Workflow
 
