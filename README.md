@@ -11,6 +11,130 @@ A Claude Code plugin for preserving context, learnings, and state across agent s
 - **WIP commits** — automatically commits current state so next agent can't accidentally revert
 - **Takeover skill** — for when you forgot to handover and need to recover from a closed session
 
+## Workflow
+
+```
+                              THE HANDOVER CYCLE
+                              ==================
+
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │                                                                      │
+    │    SESSION N                              SESSION N+1                │
+    │    ─────────                              ───────────                │
+    │                                                                      │
+    │    Agent works                            Agent reads                │
+    │         │                                 .claude/handover.md        │
+    │         │                                      │                     │
+    │         ▼                                      ▼                     │
+    │    ┌─────────┐                           ┌─────────┐                 │
+    │    │ context │                           │ init    │                 │
+    │    │ fills   │                           │checklist│                 │
+    │    │ up...   │                           └────┬────┘                 │
+    │    └────┬────┘                                │                      │
+    │         │                                     ▼                      │
+    │         │ ~80% used?                     continues work              │
+    │         │                                with full context           │
+    │         ▼                                     │                      │
+    │    ┌─────────┐                                │                      │
+    │    │/handover│                                │                      │
+    │    └────┬────┘                                │                      │
+    │         │                                     │                      │
+    │         ├── gather context                    │                      │
+    │         ├── extract learnings                 │                      │
+    │         ├── capture tasks                     │                      │
+    │         ├── scan suppressed issues            │                      │
+    │         ├── curate existing knowledge         │                      │
+    │         └── WIP commit                        │                      │
+    │              │                                │                      │
+    │              ▼                                │                      │
+    │    ┌──────────────────┐                       │                      │
+    │    │.claude/handover.md                       │                      │
+    │    │                  │◄──────────────────────┘                      │
+    │    │ • architecture   │                                              │
+    │    │ • current state  │      (living document that                   │
+    │    │ • learnings ⚠️✅  │       accumulates across                     │
+    │    │ • dead ends      │       agent generations)                     │
+    │    │ • suppressed     │                                              │
+    │    │ • tasks          │                                              │
+    │    └──────────────────┘                                              │
+    │                                                                      │
+    └──────────────────────────────────────────────────────────────────────┘
+
+                    Knowledge compounds, not resets.
+```
+
+### Detailed Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            SESSION 1 (Agent A)                              │
+│                                                                             │
+│   Work, work, work...                                                       │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ Opus 4.5 │ 82% used (164k) ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░ ● task A  ● free   │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   User: "Let's handover"                                                    │
+│                                    │                                        │
+│                                    ▼                                        │
+│                         ┌───────────────────┐                               │
+│                         │    /handover      │                               │
+│                         │                   │                               │
+│                         │ • Gather context  │                               │
+│                         │ • Extract learns  │                               │
+│                         │ • Capture tasks   │                               │
+│                         │ • Scan issues     │                               │
+│                         │ • WIP commit      │                               │
+│                         └─────────┬─────────┘                               │
+│                                   │                                         │
+│                                   ▼                                         │
+│                         ┌───────────────────┐                               │
+│                         │ .claude/handover.md                               │
+│                         │                   │                               │
+│                         │ • Init checklist  │                               │
+│                         │ • Architecture    │                               │
+│                         │ • Current state   │                               │
+│                         │ • Next steps      │                               │
+│                         │ • Tasks           │                               │
+│                         │ • Learnings ⚠️✅   │                               │
+│                         │ • Dead ends       │                               │
+│                         │ • Suppressed      │                               │
+│                         │ • Generation log  │                               │
+│                         └─────────┬─────────┘                               │
+└───────────────────────────────────┼─────────────────────────────────────────┘
+                                    │
+                                    │  (session ends)
+                                    │
+┌───────────────────────────────────┼─────────────────────────────────────────┐
+│                            SESSION 2 (Agent B)                              │
+│                                    │                                        │
+│   User: "Read .claude/handover.md and continue"                             │
+│                                    │                                        │
+│                                    ▼                                        │
+│                         ┌───────────────────┐                               │
+│                         │   Init Checklist  │                               │
+│                         │                   │                               │
+│                         │ 1. Read handover  │                               │
+│                         │ 2. Read CLAUDE.md │                               │
+│                         │ 3. Read plan file │                               │
+│                         │ 4. Run verify cmd │                               │
+│                         │ 5. Recreate tasks │                               │
+│                         │ 6. Verify learns  │                               │
+│                         │ 7. Check issues   │                               │
+│                         └─────────┬─────────┘                               │
+│                                   │                                         │
+│                                   ▼                                         │
+│                                                                             │
+│   Agent B continues with full context, learnings, and task list...          │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ Opus 4.5 │ 15% used (30k) ▒▒▒░░░░░░░░░░░░░░░░░ ● setup  ● free      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Screenshots
 
 ### Statusline with context segmentation
