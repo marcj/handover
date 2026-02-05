@@ -2,6 +2,8 @@
 
 A Claude Code plugin for preserving context, learnings, and state across agent sessions. When you're running low on context (~80% used), invoke `/handover` to create a living document that the next agent can pick up seamlessly. 
 
+This is specifically designed for long-running, big and complex tasks; to keep Claude on track. Tasks where a single session is not enough and auto-compact doesn't cut it.
+
 This works for me much better than auto-compact. This helps also a messing-up agent to stop, reflect, and restart with learnings in a fresh context. In this case I just tell the agent "You messed up, we need to handover"; works great! 
 
 ## Features
