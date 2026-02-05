@@ -1,0 +1,10 @@
+# Cache files
+segment_cache.json
+debug_input.json
+current_session*.txt
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
