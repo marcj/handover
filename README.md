@@ -6,6 +6,8 @@ This is specifically designed for long-running, big and complex tasks; to keep C
 
 This works for me much better than auto-compact. This helps also a messing-up agent to stop, reflect, and restart with learnings in a fresh context. In this case I just tell the agent "You messed up, we need to handover"; works great! 
 
+Note: This is not designed to make agents run forever autonomously; Quite the opposite: You are still in the driver seat. From my experience going full auto-pilot is a bad idea and never worked, hence why I designed this plugin and workflow instead.
+
 ## Features
 
 - **Living handover document** (`.claude/handover.md`) that accumulates learnings across generations
