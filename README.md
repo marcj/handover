@@ -143,6 +143,8 @@ A Claude Code plugin for preserving context, learnings, and state across agent s
 
 ![Statusline with different segments](assets/statusbar2.png)
 
+![Statusline with different segments](assets/statusbar3.png)
+
 ### Handover document
 
 ![Handover skill generating the living document](assets/handover.png)
