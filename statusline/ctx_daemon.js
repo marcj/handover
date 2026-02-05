@@ -8,13 +8,22 @@ const path = require("path");
 
 const PORT = 47523;
 const CACHE_FILE = path.join(__dirname, "segment_cache.json");
+const LOG_FILE = path.join(__dirname, "analysis.log");
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const MIN_INTERVAL_MS = 60 * 1000; // 60 seconds between analyses
 const MIN_PCT_DELTA = 10; // 10% context increase before re-analyze
+const ANALYSIS_TIMEOUT_MS = 2 * 60 * 1000; // 2 minute timeout for claude calls
 
 let cache = loadCache();
 let lastRequestTime = Date.now();
 let analysisInFlight = false;
+let currentAnalysisChild = null;
+
+function log(msg) {
+  const ts = new Date().toISOString();
+  const line = `[${ts}] ${msg}\n`;
+  fs.appendFileSync(LOG_FILE, line);
+}
 
 function loadCache() {
   try {
@@ -99,29 +108,46 @@ Rules:
 - 3-6 topic segments, be SPECIFIC (e.g. "JWT auth" not "authentication", "Redis caching" not "caching")
 - Names: 1-4 words, use technical terms from the conversation
 - Percentages reflect relative time spent on each topic, must sum to 100
-- Chronological order (first topic discussed = first in list)
+- Order by recency: MOST RECENTLY discussed topic goes LAST (rightmost), oldest first
 
 Conversation transcript:
 ${transcript}`;
+
+  log(`START session=${sessionId} pct=${pct}`);
 
   const child = spawn("claude", ["--print", "--model", "claude-sonnet-4-20250514", "-p", prompt], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
   });
+  currentAnalysisChild = child;
+
+  // Timeout to prevent stuck processes
+  const timeout = setTimeout(() => {
+    if (currentAnalysisChild === child) {
+      log(`TIMEOUT session=${sessionId} - killing after ${ANALYSIS_TIMEOUT_MS}ms`);
+      child.kill("SIGTERM");
+    }
+  }, ANALYSIS_TIMEOUT_MS);
 
   let stdout = "";
+  let stderr = "";
   child.stdout.on("data", (d) => stdout += d.toString());
-  child.stderr.on("data", (d) => console.error("claude stderr:", d.toString()));
+  child.stderr.on("data", (d) => stderr += d.toString());
 
   child.on("close", (code) => {
+    clearTimeout(timeout);
+    currentAnalysisChild = null;
     analysisInFlight = false;
+
     if (code !== 0) {
-      console.error("claude exited with code", code);
+      log(`ERROR session=${sessionId} code=${code} stderr=${stderr.slice(0, 500)}`);
       return;
     }
 
     // Parse response: "topic1 XX%|topic2 XX%|free XX%"
     const line = stdout.trim().split("\n").pop() || "";
+    log(`RESULT session=${sessionId} raw=${line.slice(0, 200)}`);
+
     const segments = line.split("|").map(s => {
       const match = s.trim().match(/^(.+?)\s+(\d+)%$/);
       if (match) return { name: match[1].trim(), pct: parseInt(match[2], 10) };
@@ -135,7 +161,17 @@ ${transcript}`;
         segments,
       };
       saveCache();
+      log(`CACHED session=${sessionId} segments=${segments.length}`);
+    } else {
+      log(`PARSE_FAIL session=${sessionId} - no valid segments from: ${line.slice(0, 100)}`);
     }
+  });
+
+  child.on("error", (err) => {
+    clearTimeout(timeout);
+    currentAnalysisChild = null;
+    analysisInFlight = false;
+    log(`SPAWN_ERROR session=${sessionId} err=${err.message}`);
   });
 }
 
